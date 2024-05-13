@@ -71,4 +71,13 @@ if __name__ == "__main__":
     preprocess.rename_columns()
     print(preprocess.get_df().head())
     
-    
+class preprocessmodule(selectmodule):
+    # crawaling raw data to preprocessded file
+    def __init__(self, df, args):
+        super().__init__(df, args)        
+        pass
+        
+    @classmethod
+    def load_df(cls, filepath, args):
+        df = pd.read_csv(filepath, sep=",")
+        return cls(df, args)
