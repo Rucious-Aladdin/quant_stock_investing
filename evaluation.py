@@ -32,3 +32,8 @@ class evaluator():
         ordered_columns = columns[:4] + [columns[-1]] + columns[4:-1]
         self.df = self.df[ordered_columns]
         self.df = self.df.sort_values(by='total_rank')
+    
+    def save_df(self, filepath=None):
+        if filepath is None:
+            self.filepath = filepath
+        self.df.to_csv(self.filepath, encoding=self.args.encoding, index=False)

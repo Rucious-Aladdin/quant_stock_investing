@@ -7,20 +7,20 @@ import argparse
 import preprocess
 import filtering
 import evaluation
+import rawdata
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("-d", "--date", dest="date", action="store")
     parser.add_argument("-n", "--except_ncav", dest="except_ncav", action="store_true")
     parser.add_argument("-a", "--except_admin_filter", dest="except_admin_filter", action="store_true")
     parser.add_argument("-r", "--refactor_perpbr", dest="refactor_perpbr", action="store_true")
     parser.add_argument("-rk", "--rank_select", dest="rank_select", action="store_true")
+    parser.add_argument("-e", "--encoding", dest="encoding", action="store")
+    
     args = parser.parse_args()
 
-    if args.date is None:
-        print("날짜를 입력하세요.")
-        print("예시: python main.py --date 20240415")
-        sys.exit()
+    if not os.path.exists("./data"):
+        os.makedirs("./data")
 
     if args.refactor_perpbr:
         print("write refactored per, pbr:", end=" ")
@@ -39,41 +39,34 @@ if __name__ == "__main__":
     else: # gpa = 0.5, psr = 0.3, pcr = 0.2 select criterion as default evaluation method
         rank_list = ["gpa", "psr", "pcr"]
         weight_list = [0.5, 0.3, 0.2]
-    
-    date = args.date
-    year = date[:4]
-    day = date[4:]
 
-    #여기를 수정하세요! (저장하는 path와 호환됨.)
-    filepath = "C:\\Users\\Suseong Kim\\Documents\\Rstudy\\quant\\" + year + "_퀀트투자\\" + day
-    # ------------------------------------------------------------------------------------------
+    if args.encoding is None:
+        args.encoding = "cp949"
     
-    filename = "quant_raw.csv"
+    cralwling = rawdata.CrawilingModule()
+    df = cralwling.make_df()
+    filepath = "./data/0_quant_kor_ticker.csv"
+    cralwling.save_df(filepath)
+    
+    filepath = "./data/"
+    filename = "1_quant_extracted_data.csv"
     final_path = os.path.join(filepath, filename)
     
     selecting = preprocess.selectmodule.load_df(final_path, args)
     selecting.fit()
-    df = selecting.get_df()
+    selected_df = selecting.get_df()
     
-    #유효성 검증
-    valid_filter = filtering.valid_stock_filtering(df, args)
+    valid_filter = filtering.valid_stock_filtering(selected_df, args)
     valid_filter.fit()
-    df = valid_filter.get_df()
-    filename = "quant_valid.csv"
-    final_path = os.path.join(filepath, filename)
-    df.to_csv(final_path, encoding="cp949", index=False)
-
-    quantile_filter = filtering.filter_by_quantile(df, args)
-    quantile_filter.fit()
-    df = quantile_filter.get_df()
-    filename = "quant_filter.csv"
-    final_path = os.path.join(filepath, filename)
-    df.to_csv(final_path, encoding="cp949", index=False)
+    valid_filter.save_df(os.path.join(filepath, "2_quant_valid.csv"))
+    valid_df = valid_filter.get_df()
     
-    evaluator = evaluation.evaluator(df, args, rank_list, weight_list)
+    quantile_filter = filtering.filter_by_quantile(valid_df, args)
+    quantile_filter.fit()
+    quantile_filter.save_df(os.path.join(filepath, "3_quant_filter.csv"))
+    quantile_df = quantile_filter.get_df()
+    
+    evaluator = evaluation.evaluator(quantile_df, args, rank_list, weight_list)
     evaluator.fit()
-    df = evaluator.get_df()
-    filename = "quant_final.csv"
-    final_path = os.path.join(filepath, filename)
-    df.to_csv(final_path, encoding="cp949", index=False)
+    evaluator.save_df(os.path.join(filepath, "4_quant_final.csv"))
 

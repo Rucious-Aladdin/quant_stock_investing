@@ -2,7 +2,7 @@ import requests as rq
 import re
 import pandas as pd
 import numpy as np
-
+import os
 from bs4 import BeautifulSoup
 from io import BytesIO
 
@@ -26,7 +26,7 @@ class CrawilingModule:
         self.biz_day = ''.join(self.biz_day)
     
     
-    def make_df(self):
+    def fit(self):
         self.gen_otp()
         self.post_otp()
         self.concat_sector_df()
@@ -127,3 +127,5 @@ if __name__ == "__main__":
     df = cralwling.make_df()
     print(df.head())
     print(df.shape) # -> (2680, 10)
+    filepath = "./data/quant_kor_ticker.csv"
+    cralwling.save_df(filepath)
